@@ -4,18 +4,22 @@ import { ethers } from 'ethers';
 const MOLTBETS_ABI = [
   "function openRound(uint256 roundId, uint256 openPrice) external",
   "function settle(uint256 roundId, uint256 closePrice) external",
+  "function claim(uint256 roundId, address agent) external",
+  "function claimBatch(uint256 roundId, address[] calldata agents) external",
+  "function claimFee(uint256 roundId) external",
+  "function betFor(address agent, bool isUp, uint256 amount) external",
   "function getCurrentPool() external view returns (uint256 roundId, uint256 totalUp, uint256 totalDown, uint256 totalAgents)",
-  "function getRound(uint256 roundId) external view returns (uint256 totalUp, uint256 totalDown, uint256 upCount, uint256 downCount, uint256 openPrice, uint256 closePrice, bool settled, bool cancelled)",
+  "function getRound(uint256 roundId) external view returns (uint256 totalUp, uint256 totalDown, uint256 upCount, uint256 downCount, uint256 openPrice, uint256 closePrice, bool settled, uint8 outcome)",
   "function getAgentBet(uint256 roundId, address agent) external view returns (bool isUp, uint256 amount, bool claimed)",
+  "function payoutOf(uint256 roundId, address agent) external view returns (uint256)",
   "function paused() external view returns (bool)",
-  "function setPaused(bool _paused) external",
-  "function emergencyRefund(uint256 roundId) external",
   "event BetPlaced(uint256 indexed roundId, address indexed agent, bool isUp, uint256 amount)",
   "event RoundOpened(uint256 indexed roundId, uint256 openPrice)",
-  "event RoundSettled(uint256 indexed roundId, uint256 closePrice, bool upWon, bool cancelled)",
+  "event RoundSettled(uint256 indexed roundId, uint256 closePrice, uint8 outcome)",
+  "event Claimed(uint256 indexed roundId, address indexed agent, uint256 payout)",
 ];
 
-const CONTRACT_ADDRESS = process.env.MOLTBETS_CONTRACT || '0xc6361d19F5c08a2f142Ba48Dc799feAbA6a6af03';
+const CONTRACT_ADDRESS = process.env.MOLTBETS_CONTRACT || '0x589c83B6177B307657Ee268007Bab91Bc0B85a15';
 const BASE_RPC = process.env.BASE_RPC_URL || 'https://mainnet.base.org';
 const DEPLOYER_KEY = process.env.DEPLOYER_KEY || '';
 
