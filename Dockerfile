@@ -2,11 +2,11 @@ FROM node:20-slim
 
 WORKDIR /app
 
-# Copy package files first for caching
-COPY package.json package-lock.json ./
+# Copy package files and npmrc
+COPY package.json package-lock.json .npmrc ./
 
-# Install all deps (not just production)
-RUN npm ci
+# Install deps (legacy-peer-deps via .npmrc)
+RUN npm ci --legacy-peer-deps
 
 # Copy source
 COPY . .
