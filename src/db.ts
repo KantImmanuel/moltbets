@@ -98,4 +98,108 @@ db.exec(`
   );
 `);
 
+// --- Migrations ---
+// Add mode/wallet/tx columns for real money support
+const migrations = [
+  {
+    name: 'bets_mode',
+    sql: `ALTER TABLE bets ADD COLUMN mode TEXT DEFAULT 'play'`,
+    check: () => {
+      const cols = db.prepare("PRAGMA table_info(bets)").all() as any[];
+      return cols.some((c: any) => c.name === 'mode');
+    }
+  },
+  {
+    name: 'bets_tx_hash',
+    sql: `ALTER TABLE bets ADD COLUMN tx_hash TEXT`,
+    check: () => {
+      const cols = db.prepare("PRAGMA table_info(bets)").all() as any[];
+      return cols.some((c: any) => c.name === 'tx_hash');
+    }
+  },
+  {
+    name: 'bets_wallet_address',
+    sql: `ALTER TABLE bets ADD COLUMN wallet_address TEXT`,
+    check: () => {
+      const cols = db.prepare("PRAGMA table_info(bets)").all() as any[];
+      return cols.some((c: any) => c.name === 'wallet_address');
+    }
+  },
+  {
+    name: 'agents_wallet_address',
+    sql: `ALTER TABLE agents ADD COLUMN wallet_address TEXT`,
+    check: () => {
+      const cols = db.prepare("PRAGMA table_info(agents)").all() as any[];
+      return cols.some((c: any) => c.name === 'wallet_address');
+    }
+  },
+  {
+    name: 'agents_real_profit',
+    sql: `ALTER TABLE agents ADD COLUMN real_total_bets INTEGER DEFAULT 0`,
+    check: () => {
+      const cols = db.prepare("PRAGMA table_info(agents)").all() as any[];
+      return cols.some((c: any) => c.name === 'real_total_bets');
+    }
+  },
+  {
+    name: 'agents_real_wins',
+    sql: `ALTER TABLE agents ADD COLUMN real_total_wins INTEGER DEFAULT 0`,
+    check: () => {
+      const cols = db.prepare("PRAGMA table_info(agents)").all() as any[];
+      return cols.some((c: any) => c.name === 'real_total_wins');
+    }
+  },
+  {
+    name: 'agents_real_losses',
+    sql: `ALTER TABLE agents ADD COLUMN real_total_losses INTEGER DEFAULT 0`,
+    check: () => {
+      const cols = db.prepare("PRAGMA table_info(agents)").all() as any[];
+      return cols.some((c: any) => c.name === 'real_total_losses');
+    }
+  },
+  {
+    name: 'agents_real_total_profit',
+    sql: `ALTER TABLE agents ADD COLUMN real_total_profit REAL DEFAULT 0`,
+    check: () => {
+      const cols = db.prepare("PRAGMA table_info(agents)").all() as any[];
+      return cols.some((c: any) => c.name === 'real_total_profit');
+    }
+  },
+  {
+    name: 'rounds_open_tx',
+    sql: `ALTER TABLE rounds ADD COLUMN open_tx TEXT`,
+    check: () => {
+      const cols = db.prepare("PRAGMA table_info(rounds)").all() as any[];
+      return cols.some((c: any) => c.name === 'open_tx');
+    }
+  },
+  {
+    name: 'rounds_settle_tx',
+    sql: `ALTER TABLE rounds ADD COLUMN settle_tx TEXT`,
+    check: () => {
+      const cols = db.prepare("PRAGMA table_info(rounds)").all() as any[];
+      return cols.some((c: any) => c.name === 'settle_tx');
+    }
+  },
+  {
+    name: 'idx_bets_mode',
+    sql: `CREATE INDEX IF NOT EXISTS idx_bets_mode ON bets(mode)`,
+    check: () => true // CREATE IF NOT EXISTS handles idempotency
+  },
+];
+
+for (const m of migrations) {
+  if (!m.check()) {
+    try {
+      db.exec(m.sql);
+      console.log(`[DB] Migration applied: ${m.name}`);
+    } catch (err: any) {
+      // Ignore "duplicate column" errors from concurrent starts
+      if (!err.message.includes('duplicate column')) {
+        console.error(`[DB] Migration failed (${m.name}):`, err.message);
+      }
+    }
+  }
+}
+
 export default db;

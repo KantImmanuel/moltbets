@@ -7,6 +7,32 @@ router.get('/', (req: Request, res: Response) => {
   try {
     const period = (req.query.period as string) || 'alltime';
     const limit = Math.min(parseInt(req.query.limit as string) || 50, 100);
+    const mode = (req.query.mode as string) || 'all'; // 'all', 'play', 'real'
+    const validMode = ['play', 'real'].includes(mode) ? mode : null;
+
+    // For real-money leaderboard, use dedicated agent columns
+    if (validMode === 'real' && period === 'alltime') {
+      const agents = db.prepare(`
+        SELECT id, moltbook_username as username, display_name as name, avatar_url as avatar,
+               real_total_profit as profit, real_total_wins as wins, real_total_bets as total_bets,
+               real_total_losses as losses, current_streak, best_streak, wallet_address
+        FROM agents
+        WHERE real_total_bets > 0
+        ORDER BY real_total_profit DESC
+        LIMIT ?
+      `).all(limit) as any[];
+
+      return res.json({
+        period, mode: 'real',
+        leaderboard: agents.map((a, i) => ({
+          rank: i + 1, username: a.username, name: a.name || a.username, avatar: a.avatar,
+          profit: Math.round((a.profit || 0) * 100) / 100,
+          winRate: a.total_bets > 0 ? Math.round((a.wins / a.total_bets) * 100) : 0,
+          currentStreak: a.current_streak || 0, bestStreak: a.best_streak || 0,
+          totalBets: a.total_bets || 0, wallet: a.wallet_address,
+        })),
+      });
+    }
 
     let query: string;
     let params: any[];
