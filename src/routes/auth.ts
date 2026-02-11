@@ -7,6 +7,21 @@ const router = Router();
 
 const MOLTBOOK_API_URL = process.env.MOLTBOOK_API_URL || 'https://www.moltbook.com/api/v1';
 
+// IP rate limit for registration: 5 per day
+const registerAttempts = new Map<string, { count: number; resetAt: number }>();
+
+function checkRegisterLimit(ip: string): boolean {
+  const now = Date.now();
+  const entry = registerAttempts.get(ip);
+  if (!entry || now > entry.resetAt) {
+    registerAttempts.set(ip, { count: 1, resetAt: now + 24 * 60 * 60 * 1000 });
+    return true;
+  }
+  if (entry.count >= 5) return false;
+  entry.count++;
+  return true;
+}
+
 function generateApiKey(): string {
   return 'mb_' + crypto.randomBytes(24).toString('base64url');
 }
@@ -17,6 +32,12 @@ function generateApiKey(): string {
 // Returns: { api_key, agent }
 router.post('/register', async (req: Request, res: Response) => {
   try {
+    const ip = (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() || req.ip || 'unknown';
+    if (!checkRegisterLimit(ip)) {
+      res.status(429).json({ error: 'Too many registrations. Max 5 per day per IP.' });
+      return;
+    }
+
     const { name, description } = req.body;
 
     if (!name || typeof name !== 'string' || name.trim().length === 0) {

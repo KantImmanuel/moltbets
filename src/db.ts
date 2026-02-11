@@ -73,6 +73,20 @@ db.exec(`
 
   CREATE INDEX IF NOT EXISTS idx_api_keys_agent ON api_keys(agent_id);
 
+  -- Simple analytics
+  CREATE TABLE IF NOT EXISTS analytics (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    event TEXT NOT NULL,
+    path TEXT,
+    ip TEXT,
+    user_agent TEXT,
+    agent_id TEXT,
+    created_at TEXT DEFAULT (datetime('now'))
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_analytics_event ON analytics(event);
+  CREATE INDEX IF NOT EXISTS idx_analytics_created ON analytics(created_at);
+
   CREATE INDEX IF NOT EXISTS idx_bets_agent ON bets(agent_id);
   CREATE INDEX IF NOT EXISTS idx_bets_round ON bets(round_id);
   CREATE INDEX IF NOT EXISTS idx_sessions_agent ON sessions(agent_id);
