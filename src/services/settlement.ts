@@ -1,6 +1,7 @@
 import db from '../db';
 import { getSpyPrice, getSpyOpen } from './spy';
 import { getTodayRoundId } from './market-state';
+import { openRoundOnchain, settleRoundOnchain, onchainEnabled } from './onchain';
 
 export async function createDailyRound(): Promise<void> {
   const roundId = getTodayRoundId();
@@ -14,6 +15,14 @@ export async function createDailyRound(): Promise<void> {
     const openPrice = await getSpyOpen();
     db.prepare('INSERT INTO rounds (id, status, open_price) VALUES (?, ?, ?)').run(roundId, 'open', openPrice);
     console.log(`[Round] Created round ${roundId} with open price $${openPrice}`);
+    
+    // Also open round onchain
+    if (onchainEnabled) {
+      const txHash = await openRoundOnchain(roundId, openPrice);
+      if (txHash) {
+        db.prepare("UPDATE rounds SET open_tx = ? WHERE id = ?").run(txHash, roundId);
+      }
+    }
   } catch (err) {
     console.error('[Round] Failed to create round:', err);
   }
@@ -129,6 +138,15 @@ export async function settleRound(roundId?: string): Promise<{
   settle();
 
   console.log(`[Settlement] Round ${id} settled: ${winnersCount} winners, ${losersCount} losers`);
+
+  // Also settle onchain
+  if (onchainEnabled) {
+    const txHash = await settleRoundOnchain(id, closePrice);
+    if (txHash) {
+      db.prepare("UPDATE rounds SET settle_tx = ? WHERE id = ?").run(txHash, id);
+      console.log(`[Settlement] Onchain settle tx: ${txHash}`);
+    }
+  }
 
   return { roundId: id, openPrice, closePrice, result, winnersCount, losersCount };
 }

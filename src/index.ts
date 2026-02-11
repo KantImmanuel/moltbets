@@ -56,8 +56,24 @@ app.use('/api/me', (req, res, next) => {
 app.use('/api/rounds', roundRoutes);
 
 // Health check
+import { onchainEnabled, CONTRACT_ADDRESS, getOnchainPool, getWalletBalance } from './services/onchain';
+
 app.get('/api/health', (_req, res) => {
-  res.json({ status: 'ok', version: '1.0.0', timestamp: Date.now() });
+  res.json({ status: 'ok', version: '1.0.0', timestamp: Date.now(), onchain: onchainEnabled });
+});
+
+// Onchain info
+app.get('/api/onchain', async (_req, res) => {
+  const pool = await getOnchainPool();
+  const ethBalance = await getWalletBalance();
+  res.json({
+    enabled: onchainEnabled,
+    contract: CONTRACT_ADDRESS,
+    network: 'base',
+    basescan: `https://basescan.org/address/${CONTRACT_ADDRESS}`,
+    pool,
+    settlerEthBalance: ethBalance,
+  });
 });
 
 // Admin endpoint for external settlement (called by Mac mini cron)
