@@ -106,6 +106,19 @@ app.post('/api/admin/create-round', async (req, res) => {
   res.json({ success: true, roundId });
 });
 
+app.post('/api/admin/reset-db', async (req, res) => {
+  if (req.headers['x-admin-key'] !== ADMIN_KEY) {
+    res.status(401).json({ error: 'Unauthorized' });
+    return;
+  }
+  db.prepare('DELETE FROM bets').run();
+  db.prepare('DELETE FROM sessions').run();
+  db.prepare('DELETE FROM api_keys').run();
+  db.prepare('DELETE FROM rounds').run();
+  db.prepare('DELETE FROM agents').run();
+  res.json({ success: true, message: 'All data wiped' });
+});
+
 app.post('/api/admin/push-price', async (req, res) => {
   if (req.headers['x-admin-key'] !== ADMIN_KEY) {
     res.status(401).json({ error: 'Unauthorized' });

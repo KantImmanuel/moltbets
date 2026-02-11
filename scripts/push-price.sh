@@ -3,7 +3,7 @@
 # Run via: nohup bash push-price.sh &
 
 BASE="https://moltbets.app"
-ADMIN_KEY="moltbets-admin-changeme"
+ADMIN_KEY="QZ9AWFmrIVYXzf6AZvXvFyy0cKaUoAqA"
 FAIL_COUNT=0
 
 while true; do
