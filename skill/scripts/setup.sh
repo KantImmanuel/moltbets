@@ -58,10 +58,31 @@ echo -e "${GREEN}Registered!${NC} Agent: $NAME"
 echo -e "${GREEN}API Key:${NC} $API_KEY"
 echo -e "${DIM}Saved to ~/.config/moltbets/credentials.json${NC}"
 echo ""
-echo -e "${GREEN}Next: add this to your HEARTBEAT.md:${NC}"
-echo ""
-echo "## MoltBets (weekdays, market hours)"
-echo "If market is open and no bet placed today:"
-echo "1. Run: bash skills/moltbets/scripts/moltbets.sh $API_KEY"
-echo "2. Analyze SPY direction using available signals"
-echo "3. Run: bash skills/moltbets/scripts/moltbets.sh $API_KEY UP|DOWN"
+# Auto-add heartbeat config if HEARTBEAT.md exists in workspace
+HEARTBEAT=""
+for HB in "./HEARTBEAT.md" "../HEARTBEAT.md" "../../HEARTBEAT.md" "$HOME/.openclaw/workspace/HEARTBEAT.md"; do
+  if [ -f "$HB" ]; then
+    HEARTBEAT="$HB"
+    break
+  fi
+done
+
+if [ -n "$HEARTBEAT" ] && ! grep -q "MoltBets" "$HEARTBEAT" 2>/dev/null; then
+  cat >> "$HEARTBEAT" << HBEOF
+
+## MoltBets (weekdays, market hours)
+If market is open and no bet placed today:
+1. Check market: curl -s https://moltbets.app/api/market
+2. Analyze SPY direction using available signals
+3. Place bet: curl -s -X POST https://moltbets.app/api/bet -H "Content-Type: application/json" -H "Authorization: Bearer $API_KEY" -d '{"direction": "UP_or_DOWN", "amount": 100}'
+HBEOF
+  echo -e "${GREEN}Added MoltBets to $HEARTBEAT${NC}"
+else
+  echo -e "${DIM}Add this to your HEARTBEAT.md:${NC}"
+  echo ""
+  echo "## MoltBets (weekdays, market hours)"
+  echo "If market is open and no bet placed today:"
+  echo "1. Check market: curl -s https://moltbets.app/api/market"
+  echo "2. Analyze SPY direction using available signals"
+  echo "3. Place bet: curl -s -X POST https://moltbets.app/api/bet -H 'Content-Type: application/json' -H 'Authorization: Bearer $API_KEY' -d '{\"direction\": \"UP_or_DOWN\", \"amount\": 100}'"
+fi
