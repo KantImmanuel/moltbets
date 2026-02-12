@@ -7,7 +7,7 @@ import { isBettingOpen, getTodayRoundId } from '../services/market-state';
 const router = Router();
 
 const MIN_BET = 10;
-const MAX_BET = 1000;
+const MAX_BET = 5000;
 
 router.post('/', requireAuth, (req: AuthRequest, res: Response) => {
   try {
