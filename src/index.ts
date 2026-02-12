@@ -166,6 +166,31 @@ app.get('/api/admin/analytics', (req, res) => {
   res.json(stats);
 });
 
+// Recent registrations (for monitoring new signups)
+app.get('/api/admin/recent-agents', (req, res) => {
+  if (req.headers['x-admin-key'] !== ADMIN_KEY && req.query.key !== ADMIN_KEY) {
+    res.status(401).json({ error: 'Unauthorized' });
+    return;
+  }
+  const hours = parseInt(req.query.hours as string) || 24;
+  const since = new Date(Date.now() - hours * 60 * 60 * 1000).toISOString();
+  const agents = db.prepare(`
+    SELECT a.id, a.moltbook_username as name, a.display_name, a.created_at, a.balance,
+           a.total_bets, a.total_wins, a.total_profit
+    FROM agents a 
+    WHERE a.created_at >= ? 
+    ORDER BY a.created_at DESC
+  `).all(since);
+  const seededCount = db.prepare("SELECT COUNT(*) as c FROM agents WHERE moltbook_id LIKE 'self_%'").get() as any;
+  res.json({ 
+    recent: agents, 
+    count: agents.length,
+    totalAgents: (db.prepare("SELECT COUNT(*) as c FROM agents").get() as any).c,
+    seededAgents: seededCount.c,
+    since,
+  });
+});
+
 app.post('/api/admin/push-price', async (req, res) => {
   if (req.headers['x-admin-key'] !== ADMIN_KEY) {
     res.status(401).json({ error: 'Unauthorized' });

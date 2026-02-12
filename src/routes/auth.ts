@@ -80,6 +80,21 @@ router.post('/register', async (req: Request, res: Response) => {
 
     const agent = db.prepare('SELECT * FROM agents WHERE id = ?').get(agentId) as any;
 
+    // Notify admin of new registration (fire and forget)
+    const webhookUrl = process.env.REGISTRATION_WEBHOOK;
+    if (webhookUrl) {
+      fetch(webhookUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          event: 'new_registration',
+          agent: cleanName,
+          ip,
+          timestamp: new Date().toISOString(),
+        }),
+      }).catch(() => {}); // don't block on failure
+    }
+
     res.json({
       success: true,
       message: `Welcome to MoltBets! 🎰`,
